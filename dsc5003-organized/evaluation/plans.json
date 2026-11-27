@@ -1,0 +1,154 @@
+[
+  {
+    "loans": 1000,
+    "workload": "Overdue loans",
+    "configuration": "Without index",
+    "details": [
+      "SCAN loan USING INDEX one_open_loan",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ]
+  },
+  {
+    "loans": 1000,
+    "workload": "Overdue loans",
+    "configuration": "With index",
+    "details": [
+      "SEARCH loan USING INDEX open_loan_due (due_at<?)"
+    ]
+  },
+  {
+    "loans": 1000,
+    "workload": "Borrower history",
+    "configuration": "Without index",
+    "details": [
+      "SCAN m",
+      "SCAN l",
+      "SEARCH e USING COVERING INDEX equipment_by_model (model_id=? AND id=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ]
+  },
+  {
+    "loans": 1000,
+    "workload": "Borrower history",
+    "configuration": "With index",
+    "details": [
+      "SEARCH l USING INDEX loan_student_history (student_id=?)",
+      "SCAN m",
+      "SEARCH e USING COVERING INDEX equipment_by_model (model_id=? AND id=?)"
+    ]
+  },
+  {
+    "loans": 10000,
+    "workload": "Overdue loans",
+    "configuration": "Without index",
+    "details": [
+      "SCAN loan USING INDEX one_open_loan",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ]
+  },
+  {
+    "loans": 10000,
+    "workload": "Overdue loans",
+    "configuration": "With index",
+    "details": [
+      "SEARCH loan USING INDEX open_loan_due (due_at<?)"
+    ]
+  },
+  {
+    "loans": 10000,
+    "workload": "Borrower history",
+    "configuration": "Without index",
+    "details": [
+      "SCAN m",
+      "SCAN l",
+      "SEARCH e USING COVERING INDEX equipment_by_model (model_id=? AND id=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ]
+  },
+  {
+    "loans": 10000,
+    "workload": "Borrower history",
+    "configuration": "With index",
+    "details": [
+      "SEARCH l USING INDEX loan_student_history (student_id=?)",
+      "SCAN m",
+      "SEARCH e USING COVERING INDEX equipment_by_model (model_id=? AND id=?)"
+    ]
+  },
+  {
+    "loans": 50000,
+    "workload": "Overdue loans",
+    "configuration": "Without index",
+    "details": [
+      "SCAN loan USING INDEX one_open_loan",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ]
+  },
+  {
+    "loans": 50000,
+    "workload": "Overdue loans",
+    "configuration": "With index",
+    "details": [
+      "SEARCH loan USING INDEX open_loan_due (due_at<?)"
+    ]
+  },
+  {
+    "loans": 50000,
+    "workload": "Borrower history",
+    "configuration": "Without index",
+    "details": [
+      "SCAN m",
+      "SCAN l",
+      "SEARCH e USING COVERING INDEX equipment_by_model (model_id=? AND id=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ]
+  },
+  {
+    "loans": 50000,
+    "workload": "Borrower history",
+    "configuration": "With index",
+    "details": [
+      "SEARCH l USING INDEX loan_student_history (student_id=?)",
+      "SCAN m",
+      "SEARCH e USING COVERING INDEX equipment_by_model (model_id=? AND id=?)"
+    ]
+  },
+  {
+    "loans": 100000,
+    "workload": "Overdue loans",
+    "configuration": "Without index",
+    "details": [
+      "SCAN loan USING INDEX one_open_loan",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ]
+  },
+  {
+    "loans": 100000,
+    "workload": "Overdue loans",
+    "configuration": "With index",
+    "details": [
+      "SEARCH loan USING INDEX open_loan_due (due_at<?)"
+    ]
+  },
+  {
+    "loans": 100000,
+    "workload": "Borrower history",
+    "configuration": "Without index",
+    "details": [
+      "SCAN m",
+      "SCAN e",
+      "SEARCH l USING INDEX loan_equipment_history (equipment_id=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ]
+  },
+  {
+    "loans": 100000,
+    "workload": "Borrower history",
+    "configuration": "With index",
+    "details": [
+      "SEARCH l USING INDEX loan_student_history (student_id=?)",
+      "SCAN m",
+      "SEARCH e USING COVERING INDEX equipment_by_model (model_id=? AND id=?)"
+    ]
+  }
+]
