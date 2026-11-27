@@ -1,0 +1,1 @@
+# dsc5003-campus-equipment
