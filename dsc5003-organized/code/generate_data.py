@@ -48,7 +48,7 @@ def main():
     with db.connect(args.output) as connection:
         db.apply_sql(connection, "schema.sql")
         populate(connection, args.loans - 1000, args.seed)
-        connection.execute("PRAGMA user_version = 3")
+        connection.execute("PRAGMA user_version = 4")
     print(f"Created {args.output}: {args.loans:,} loans, 1,000 equipment items, 500 students")
 
 

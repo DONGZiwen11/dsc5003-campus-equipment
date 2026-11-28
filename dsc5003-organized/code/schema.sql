@@ -47,3 +47,25 @@ CREATE INDEX IF NOT EXISTS open_loan_due ON loan(due_at) WHERE returned_at IS NU
 CREATE INDEX IF NOT EXISTS loan_equipment_history ON loan(equipment_id, borrowed_at);
 CREATE INDEX IF NOT EXISTS loan_student_history ON loan(student_id, borrowed_at);
 CREATE INDEX IF NOT EXISTS equipment_by_model ON equipment(model_id, id);
+
+-- Open loans and open maintenance must be mutually exclusive, even for direct SQL.
+CREATE TRIGGER IF NOT EXISTS loan_no_maintenance_insert BEFORE INSERT ON loan
+WHEN NEW.returned_at IS NULL AND EXISTS (SELECT 1 FROM maintenance_log WHERE equipment_id=NEW.equipment_id AND closed_at IS NULL)
+BEGIN
+    SELECT RAISE(ABORT, 'Equipment is under maintenance');
+END;
+CREATE TRIGGER IF NOT EXISTS loan_no_maintenance_update BEFORE UPDATE OF equipment_id, returned_at ON loan
+WHEN NEW.returned_at IS NULL AND EXISTS (SELECT 1 FROM maintenance_log WHERE equipment_id=NEW.equipment_id AND closed_at IS NULL)
+BEGIN
+    SELECT RAISE(ABORT, 'Equipment is under maintenance');
+END;
+CREATE TRIGGER IF NOT EXISTS maintenance_no_loan_insert BEFORE INSERT ON maintenance_log
+WHEN NEW.closed_at IS NULL AND EXISTS (SELECT 1 FROM loan WHERE equipment_id=NEW.equipment_id AND returned_at IS NULL)
+BEGIN
+    SELECT RAISE(ABORT, 'Equipment is on loan');
+END;
+CREATE TRIGGER IF NOT EXISTS maintenance_no_loan_update BEFORE UPDATE OF equipment_id, closed_at ON maintenance_log
+WHEN NEW.closed_at IS NULL AND EXISTS (SELECT 1 FROM loan WHERE equipment_id=NEW.equipment_id AND returned_at IS NULL)
+BEGIN
+    SELECT RAISE(ABORT, 'Equipment is on loan');
+END;

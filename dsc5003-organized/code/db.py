@@ -34,7 +34,13 @@ def initialize(path=DATABASE):
     with connect(path) as connection:
         connection.execute("BEGIN IMMEDIATE")
         version = connection.execute("PRAGMA user_version").fetchone()[0]
+        if version == 4:
+            return
         if version == 3:
+            if connection.execute("SELECT 1 FROM loan l JOIN maintenance_log m ON l.equipment_id=m.equipment_id WHERE l.returned_at IS NULL AND m.closed_at IS NULL").fetchone():
+                raise ValueError("Resolve conflicting open loan and maintenance records before upgrading.")
+            apply_sql(connection, "schema.sql")
+            connection.execute("PRAGMA user_version = 4")
             return
         if version not in (0, 1, 2):
             raise ValueError(f"Unsupported database version: {version}")
@@ -54,7 +60,7 @@ def initialize(path=DATABASE):
                 connection.execute(f"DROP TABLE legacy_{table}")
             # Legacy indexes kept their names until the old tables were dropped.
             apply_sql(connection, "schema.sql")
-        connection.execute("PRAGMA user_version = 3")
+        connection.execute("PRAGMA user_version = 4")
 
 
 def timestamp(value):

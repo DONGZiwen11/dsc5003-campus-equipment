@@ -1,79 +1,64 @@
-# Campus Equipment Loans
+# Campus Equipment Loans — DSC5003 Track 1
 
-DSC5003 Track 1 project for a campus laboratory. Browse available equipment, check items out and in, and review overdue loans.
+A local, shared-operator portal for equipment availability, checkout, return, maintenance and management reports. Python 3.11+ and SQLite are required; no third-party runtime dependencies. Matplotlib is optional for plotting benchmarks.
 
-## Run locally
+## Run
 
-Requires Python 3.11 or later. No third-party packages are needed.
+From this `code` directory:
 
-```powershell
+```sh
 python app.py --port 8001
 ```
 
-Open http://127.0.0.1:8001 in a local browser. Keep the terminal open. The default port is 8000. On first launch the app creates a SQLite database and loads fictitious records. The demonstration runs locally and uses a shared screen without accounts. All timestamps are UTC.
+Open http://127.0.0.1:8001. First launch creates `equipment.sqlite3` with fictitious seed data. Existing version 1–3 databases are upgraded to version 4; back up existing data first. Version 4 rejects migration if conflicting open loans and maintenance already exist. Timestamps are UTC.
 
-## Source files
+## Files
 
-- `app.py` serves the English interface and handles loan actions.
-- `style.css` defines the responsive campus-portal design.
-- `db.py` contains parameterized queries, initialization and loan operations.
-- `schema.sql` defines the relational schema, constraints and indexes.
-- `seed.sql` provides sample data.
-- `translate_seed.sql` migrates the original sample data to the English interface.
-- `benchmark.py` measures overdue-query performance.
-- `../report/report.md` documents the architecture, database design and benchmark evaluation.
+| File | Purpose |
+|---|---|
+| app.py, style.css | HTTP portal and styling |
+| db.py | Connections, migrations, transactional operations |
+| schema.sql | Seven tables, constraints, six indexes and four triggers |
+| seed.sql, translate_seed.sql | Demo data and legacy translation |
+| queries.py | Availability, loan history, maintenance and management queries |
+| generate_data.py | Synthetic workload generation |
+| benchmark.py | Overdue, borrower-history and concurrent checkout latency |
+| plot_benchmark.py | Recreate performance charts |
+| test_integrity.py | Automated integrity and concurrency tests |
+| ../evaluation/ | Recorded metrics, plans, environment, charts and correctness logs |
+| ../../DSC5003_Track1_Report/5003-report.pdf | Report (in the complete project archive) |
 
 ## Database design
 
 ```mermaid
 erDiagram
+    CATEGORY ||--o{ MODEL : classifies
     MODEL ||--o{ EQUIPMENT : describes
-    EQUIPMENT ||--o{ LOAN : appears_in
+    EQUIPMENT ||--o{ LOAN : borrowed
     STUDENT ||--o{ LOAN : borrows
+    EQUIPMENT ||--o{ MAINTENANCE_LOG : maintained
+    LOAN o|--o{ AUDIT_LOG : records
+    MAINTENANCE_LOG o|--o{ AUDIT_LOG : records
 ```
 
-An equipment model describes several physical items. Each loan references one item and one student. Model descriptions are stored once, and loan status is derived from the due and return timestamps. The documented functional dependencies have superkey determinants, so the relations satisfy BCNF under these dependencies.
+Each audit row references exactly one of a loan or maintenance record. Partial unique indexes enforce one open loan and one open maintenance record per item. Four triggers prevent simultaneous open loan and maintenance states on insert and update. Application checks run inside BEGIN IMMEDIATE transactions; state transitions and audit events commit together. Status is derived from timestamps rather than stored separately.
 
-Availability uses a NOT EXISTS query. A partial unique index permits at most one open loan per item, including during concurrent checkouts. A separate partial date index supports the overdue range query. Each checkout and return commits in one transaction.
+## Demonstration
 
-See [../report/report.md](../report/report.md) for the architecture diagram, the ER diagram with keys and relationship cardinalities, and the benchmark results.
+Filter Photography, check out CAM-02, check it back in, then open and close maintenance. Attempt checkout while maintenance is open. Use Overdue only to find the seeded overdue loan. Review utilization, popular models, repeated overdue borrowers and audit events. The loan list displays at most 100 records; full history is not exposed through pagination.
 
-## Demonstrate and evaluate
+## Tests and benchmark reproduction
 
-1. Filter by Photography. CAM-01 is initially on loan.
-2. Check out CAM-02, find it in the loan records, and check it in.
-3. Select Overdue only to see the seeded overdue record.
-4. Run `python benchmark.py` to measure indexed queries and concurrent checkouts.
+```sh
+python test_integrity.py
+python generate_data.py --loans 100000 --output synthetic.sqlite3
+python benchmark.py
+python -m pip install matplotlib
+python plot_benchmark.py
+```
 
-## Extended workflows
+The benchmark writes metrics.csv, plans.json and environment.json under ../evaluation; back up recorded results before rerunning. The standalone data generator creates a separate database with 1,000 open loans; the benchmark reduces this to 100 open loans (10 overdue). The archived performance results were collected on the original version 3 schema; new version 4 timings can differ. The correctness log is from version 4.
 
-`python app.py --port 8001` initializes or upgrades the local database and serves the portal.
-Run `python generate_data.py --loans 100000 --output synthetic.sqlite3` to create a
-separate reproducible database. Run `python benchmark.py` to regenerate the Section 6 data.
+## Limitations
 
-`queries.py` holds the availability, overdue, loan-detail, utilization, model-ranking,
-repeat-overdue, overlap, maintenance and audit queries. `translate_seed.sql` is retained
-for migration from version 1. Version 3 adds category, maintenance and audit relations.
-Existing loan and equipment identifiers are retained. Audit events start at upgrade.
-
-Checkout locks the writer before validating the requested interval and maintenance
-state. An open loan has an unknown actual end, and is treated as blocking until
-check-in. Intervals use half-open bounds. The partial unique index independently
-enforces one open loan per device. Returns and maintenance transitions use the same
-writer lock. State changes and audit events commit together. The local portal
-supports multiple concurrent requests with a shared operator interface; it does
-not authenticate operators or attribute events to individual accounts.
-
-Three additional ER relationships are CATEGORY to MODEL, EQUIPMENT to
-MAINTENANCE_LOG, and LOAN or MAINTENANCE_LOG to AUDIT_LOG. A category's name
-is its key. Maintenance details depend on their maintenance ID; the equipment and
-action target are referenced by foreign key. Derived availability and utilization
-are calculated by queries. Referenced rows are protected by RESTRICT on delete,
-and identifier changes cascade to dependent rows.
-
-The archived ../report/report.md is the supplied draft. Update it with the version 3 schema,
-maintenance and audit workflow, and freshly measured results before submission.
-
-## Performance figures
-
-Run `python benchmark.py` for the four-scale experiment. Install Matplotlib with `python -m pip install matplotlib` and run `python plot_benchmark.py` to regenerate the two PNG figures. See Section 6 of ../report/report.md for the recorded measurements.
+Local use only: no authentication or operator attribution. Synthetic workloads, fixed active-loan count, one borrower-history target, and 1/4 writers do not represent all production workloads. The benchmarks measure database latency, not HTTP throughput. Direct SQL operations are constrained but do not automatically create audit events.
